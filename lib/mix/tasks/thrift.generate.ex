@@ -42,7 +42,8 @@ defmodule Mix.Tasks.Thrift.Generate do
         # other settings...
         thrift: [
           include_paths: ["./extra_thrift"],
-          output_path: "lib/generated"
+          output_path: "lib/generated",
+          output_test_data: "test/test_data/"
         ]
       ]
     end
@@ -55,12 +56,20 @@ defmodule Mix.Tasks.Thrift.Generate do
     {opts, files} =
       OptionParser.parse!(
         args,
-        switches: [include: :keep, namespace: :string, out: :string, verbose: :boolean],
+        switches: [
+          include: :keep,
+          namespace: :string,
+          out: :string,
+          out_test: :string,
+          verbose: :boolean
+        ],
         aliases: [I: :include, o: :out, v: :verbose]
       )
 
     config = Keyword.get(Mix.Project.config(), :thrift, [])
     output_path = opts[:out] || Keyword.get(config, :output_path, "lib")
+    output_test_data = opts[:out_test] || Keyword.get(config, :output_test_data, "lib")
+
     namespace = opts[:namespace] || Keyword.get(config, :namespace)
 
     include_paths =

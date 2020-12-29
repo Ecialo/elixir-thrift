@@ -105,7 +105,8 @@ ConstList -> ConstValue Separator ConstList: ['$1'|'$3'].
 % Typedef
 
 Typedef -> typedef FieldType Annotations ident Annotations Separator:
-    {typedef, '$2', unwrap('$4')}.
+    build_node('Typedef', line('$1'), '$5', [unwrap('$4'), '$2']).
+    % {typedef, '$2', unwrap('$4')}.
 
 % Enum
 

@@ -17,6 +17,7 @@ defmodule Thrift.Parser.FileGroup do
     Struct,
     TEnum,
     TypeRef,
+    Typedef,
     Union,
     ValueRef
   }
@@ -125,6 +126,10 @@ defmodule Thrift.Parser.FileGroup do
     resolve(group, resolutions[type_name])
   end
 
+  def resolve(%FileGroup{} = group, %Typedef{type: type}) do
+    resolve(group, type)
+  end
+
   def resolve(%FileGroup{resolutions: resolutions} = group, %ValueRef{
         referenced_value: value_name
       }) do
@@ -175,6 +180,10 @@ defmodule Thrift.Parser.FileGroup do
     dest_module(file_group, name)
   end
 
+  def dest_module(file_group, %Typedef{name: name}) do
+    dest_module(file_group, name)
+  end
+
   def dest_module(file_group, Constant) do
     # Default to naming the constants module after the namespaced, camelized
     # basename of its file. For foo.thrift, this would be `foo.Foo`.
@@ -185,6 +194,7 @@ defmodule Thrift.Parser.FileGroup do
     # (ignoring case), use that instead to avoid generating two modules with
     # the same spellings but different cases.
     schema = file_group.schemas[base]
+    IO.puts("file_group flatten")
 
     symbols =
       [
@@ -217,7 +227,7 @@ defmodule Thrift.Parser.FileGroup do
     struct_name =
       name_parts
       |> Enum.at(1)
-      |> initialcase()
+      |> Macro.camelize()
 
     case file_group.namespaces[module_name] do
       nil ->

@@ -343,4 +343,5 @@ defmodule Thrift.Generator.Utils do
   defp resolution_failed(%ValueRef{} = ref) do
     raise "Fatal error: Could not find value: #{ref.referenced_value}"
   end
+
 end

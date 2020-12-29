@@ -98,6 +98,23 @@ defmodule Thrift.AST do
     end
   end
 
+  defmodule Typedef do
+
+    @type t :: %Typedef{
+      line: Thrift.Parser.line(),
+      annotations: Thrift.Parser.annotations(),
+      name: atom(),
+      type: Types.t()
+    }
+    @enforce_keys [:name, :type]
+    defstruct line: nil, annotations: %{}, name: nil, type: nil
+
+    def new(name, type) do
+      %Typedef{name: List.to_atom(name), type: type}
+    end
+
+  end
+
   defmodule TEnum do
     @moduledoc """
     An enumerated type with named values.
@@ -528,17 +545,29 @@ defmodule Thrift.AST do
       }
     end
 
-    defp merge(schema, {:typedef, actual_type, type_alias}) do
+    defp merge(schema, %Typedef{} = typedef) do
       %Schema{
         schema
         | typedefs:
-            put_new_strict(
-              schema.typedefs,
-              List.to_atom(type_alias),
-              add_namespace_to_type(schema.module, actual_type)
-            )
+          put_new_strict(
+            schema.typedefs,
+            typedef.name,
+            add_namespace_to_name(schema.module, typedef)
+          )
       }
     end
+
+    # defp merge(schema, {:typedef, actual_type, type_alias}) do
+    #   %Schema{
+    #     schema
+    #     | typedefs:
+    #         put_new_strict(
+    #           schema.typedefs,
+    #           List.to_atom(type_alias),
+    #           add_namespace_to_type(schema.module, actual_type)
+    #         )
+    #   }
+    # end
 
     defp add_namespace_to_name(nil, model) do
       model

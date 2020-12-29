@@ -46,7 +46,8 @@ defmodule Mix.Tasks.Compile.Thrift do
         # other settings...
         thrift: [
           files: Path.wildcard("thrift/**/*.thrift"),
-          output_path: "lib/generated"
+          output_path: "lib/generated",
+          output_test_data: "test/test_data/"
         ]
       ]
     end
@@ -64,6 +65,13 @@ defmodule Mix.Tasks.Compile.Thrift do
     input_files = Keyword.get(config, :files, [])
     output_path = Keyword.get(config, :output_path, "lib")
 
+    output_test_data =
+      Keyword.get(
+        config,
+        :output_test_data,
+        "test/test_data/"
+      )
+
     parser_opts =
       config
       |> Keyword.take([:include_paths, :namespace])
@@ -77,8 +85,8 @@ defmodule Mix.Tasks.Compile.Thrift do
 
         {groups, [] = _diagnostics} ->
           groups
-          |> extract_targets(output_path, opts[:force])
-          |> generate(manifest(), output_path, opts)
+          |> extract_targets({output_path, output_test_data}, opts[:force])
+          |> generate(manifest(), [output_path, output_test_data], opts)
 
         {_groups, diagnostics} ->
           {:error, diagnostics}
@@ -117,8 +125,8 @@ defmodule Mix.Tasks.Compile.Thrift do
 
   @typep mappings :: [{:stale, FileGroup.t(), [Path.t()]} | {:ok, FileGroup.t(), [Path.t()]}]
 
-  @spec extract_targets([FileGroup.t()], Path.t(), boolean) :: mappings
-  defp extract_targets(groups, output_path, force) when is_list(groups) do
+  @spec extract_targets([FileGroup.t()], {Path.t(), Path.t()}, boolean) :: mappings
+  defp extract_targets(groups, {output_path, _}, force) when is_list(groups) do
     for %FileGroup{initial_file: file} = group <- groups do
       targets =
         group
@@ -135,7 +143,7 @@ defmodule Mix.Tasks.Compile.Thrift do
 
   @spec generate(mappings, Path.t(), Path.t(), OptionParser.parsed()) ::
           {:ok | :noop | :error, [Diagnostic.t()]}
-  defp generate(mappings, manifest, output_path, opts) do
+  defp generate(mappings, manifest, [output_path, output_test_data] = output, opts) do
     timestamp = :calendar.universal_time()
     verbose = opts[:verbose]
 
@@ -157,13 +165,15 @@ defmodule Mix.Tasks.Compile.Thrift do
     else
       # Ensure we have an output directory and remove old target files.
       File.mkdir_p!(output_path)
+      File.mkdir_p!(output_test_data)
+
       Enum.each(removed, &File.rm/1)
 
       unless Enum.empty?(stale) do
         Mix.Utils.compiling_n(length(stale), :thrift)
 
         Enum.each(stale, fn {group, _targets} ->
-          Thrift.Generator.generate!(group, output_path)
+          Thrift.Generator.generate!(group, output)
           verbose && Mix.shell().info("Compiled #{group.initial_file}")
         end)
       end

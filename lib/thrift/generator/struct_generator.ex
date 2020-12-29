@@ -44,7 +44,12 @@ defmodule Thrift.Generator.StructGenerator do
         end
       end
 
-    quote do
+    struct_spec_block = Enum.map(
+      struct.fields,
+      &(generate_struct_spec(&1, schema.file_group))
+    )
+
+      quote do
       defmodule unquote(name) do
         @moduledoc false
         _ = unquote("Auto-generated Thrift #{label} #{struct.name}")
@@ -59,7 +64,7 @@ defmodule Thrift.Generator.StructGenerator do
         )
 
         unquote(define_block)
-        @type t :: %__MODULE__{}
+        @type t :: %__MODULE__{unquote_splicing(struct_spec_block)}
         def new, do: %__MODULE__{}
         unquote_splicing(List.wrap(extra_defs))
 
@@ -117,5 +122,9 @@ defmodule Thrift.Generator.StructGenerator do
 
   defp to_thrift(%TypeRef{referenced_type: type}, file_group) do
     to_thrift(FileGroup.resolve(file_group, type), file_group)
+  end
+
+  defp generate_struct_spec(field_ast, file_group) do
+    {field_ast.name, Utils.Types.typespec(field_ast.type, file_group)}
   end
 end
