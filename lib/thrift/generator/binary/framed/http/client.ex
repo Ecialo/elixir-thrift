@@ -43,13 +43,15 @@ defmodule Thrift.Generator.Binary.Framed.HTTP.Client do
       end)
 
     quote do
-      def unquote(func_name)(thrift_url, unquote_splicing(function_args)) do
+      def unquote(func_name)(thrift_url, unquote_splicing(function_args), opts \\ []) do
         args = %unquote(args_module){unquote_splicing(assignments)}
         serialized_args = unquote(args_binary_module).serialize(args)
         header = Binary.serialize(:message_begin, {:call, 0, unquote(s_func_name)})
         payload = [header | serialized_args] |> IO.iodata_to_binary()
 
-        {:ok, response} = HTTPoison.post(thrift_url, payload, [], hackney: [pool: false])
+        opts = Keyword.merge([hackney: [pool: false]], opts)
+
+        {:ok, response} = HTTPoison.post(thrift_url, payload, [], opts)
 
         result =
           with(
