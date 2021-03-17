@@ -57,9 +57,10 @@ defmodule Thrift.Generator.Binary.Framed.HTTP.Client do
         result =
           with(
             {:ok, {:reply, 0, unquote(s_func_name), rest}} <- Binary.deserialize(:message_begin, response.body),
-            {%unquote(response_module){success: s}, ""} <- unquote(response_binary_module).deserialize(rest)
+            # {%unquote(response_module){success: s}, ""} <- unquote(response_binary_module).deserialize(rest)
+            {%unquote(response_module){} = r, ""} <- unquote(response_binary_module).deserialize(rest)
           ) do
-            {:ok, s}
+            Thrift.Utils.Web.normalize_q_result(r)
           end
         {response, result}
       end
